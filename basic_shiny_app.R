@@ -16,11 +16,13 @@
 # ---
 
 library(shiny)
+library(plotly)
 library(oce)
 
 ui <- fluidPage(
   titlePanel("Visual QC Editor"),
-  uiOutput("parameters")
+  uiOutput("parameters"),
+  plotlyOutput("plot")
 )
 
 server <- function(input, output) {
@@ -48,11 +50,21 @@ server <- function(input, output) {
     return(vars)
   })
 
-    output$parameters = renderUI({
+  output$parameters = renderUI({
     # Select parameter to plot
     selectInput(inputId = "type", label = strong("Parameter"), choices = outVar())
   })
 
+  df_data <- data.frame(ctd[['data']])
+  df_flags <- data.frame(ctd[['metadata']]$flags)
+  nms <- row.names(df_data)
+  
+  output$plot <- renderPlotly({
+    p <- ggplot(data = df_data, aes(x = temperature, y = pressure, key = nms)) + geom_point()
+    p <- p + scale_y_reverse()
+    ggplotly(p) %>% layout(dragmode = "lasso")
+  })
+  
 }
 
 shinyApp(ui = ui, server = server)
