@@ -67,10 +67,11 @@ ui <- fluidPage(
         mainPanel(
             
             # textOutput("filep"),
-            textOutput("params")
-            # textOutput("cn")
+            # textOutput("params"),
+            textOutput("cn"),
+            # textOutput("nms"),
             
-            # plotlyOutput("profilePlot")
+            plotlyOutput("profilePlot")
             
         )
     )
@@ -105,19 +106,21 @@ server <- function(input, output, session) {
     observe({
         # Read in the CTD data.
         ctd <- read.ctd(re1())
-        odfData$dfCTD <- data.frame(ctd[['data']])
+        odfData$dfCTD <- as.data.frame(ctd[['data']])
+        odfData$lMeta <- as.list(ctd[['metadata']])
+        # nms <- as.numeric(row.names(odfData$dfCTD))
     })
 
-    # metadata <- reactive({
-    #     data.frame(odfData[['metadata']])
-    # })
-    # 
-    # output$cn <- renderText({
-    #     print(metadata$cruiseNumber)
-    # })
+    output$cn <- renderText({
+        print(odfData$lMeta$cruiseNumber)
+    })
     
     vars <- reactive({
         vars <- names(odfData$dfCTD)
+    })
+
+    output$nms <- reactive({
+        print(odfData$nms)
     })
     
     observe({
@@ -125,19 +128,13 @@ server <- function(input, output, session) {
     })
     
     # output$profilePlot <- renderPlotly({
-    #     p <- ggplot(data = odfData$dfCTD, aes(x = input$parameter, y = pressure, key = nms)) + geom_point()
-    #     p <- p + scale_y_reverse()
+    #     if (is.null(odfData)) {return()}
+    #     p = ggplot()
+    #     p <- ggplot(data = odfData$dfCTD, aes(x = input$parameter, y = pressure)) + geom_point()
+    #     # p <- p + scale_y_reverse()
     #     ggplotly(p) %>% layout(dragmode = "lasso")
     # })
     
-    # output$distPlot <- renderPlot({
-    #     # generate bins based on input$bins from ui.R
-    #     x    <- faithful[, 2]
-    #     bins <- seq(min(x), max(x), length.out = input$bins + 1)
-    # 
-    #     # draw the histogram with the specified number of bins
-    #     hist(x, breaks = bins, col = 'darkgray', border = 'white')
-    # })
 }
 
 # Run the application 
