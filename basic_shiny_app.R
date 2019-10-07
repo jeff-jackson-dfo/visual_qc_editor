@@ -11,7 +11,7 @@
 # title: "Visual Quality Control Tool for Inspecting CTD Profile Data"
 # author: "Jeff Jackson"
 # date: "17/09/2019"
-# last updated: "17/09/2019"
+# last updated: "18/09/2019"
 # output: html_document
 # ---
 
@@ -21,50 +21,107 @@ library(oce)
 
 ui <- fluidPage(
   titlePanel("Visual QC Editor"),
-  uiOutput("parameters"),
-  plotlyOutput("plot")
+  mainPanel(
+    uiOutput("plot")
+  ),
+  sidebarPanel(
+    
+    # Input: Select a file ----
+    fileInput(inputId = "file1", 
+              label = "Choose ODF File",
+              multiple = FALSE,
+              accept = c("text/odf", ".odf")
+             ),
+
+    # Text box containing file path and name.
+    textInput(inputId = "filepath", label = "Path and Filename:", value = ""),
+    
+    selectInput(inputId = "parameter", label = strong("Select X Parameter to plot against Pressure"), choices = NULL)
+  )
 )
 
-server <- function(input, output) {
+server <- (function(input, output, session) {
   
-  # Load the CTD data
-  path <- 'E:/Data/AZMP/2019/COR2019001/DATASHOP_PROCESSING/Step_3_Add_QF_Fields/'
-  filesWithPath <- list.files(path = path, pattern = 'CTD_COR2019001_01\\w+_\\w+_DN\\.ODF', full.names = TRUE)
-  files <- list.files(path = path, pattern = 'CTD_COR2019001_01\\w+_\\w+_DN\\.ODF', full.names = FALSE)
-  ctds <- lapply(filesWithPath, read.ctd)
+  observe({
+    # if(!exists(input$parameter)) return()
+    
+    vars <- names(plot.ctd)
+    
+    # Display the current ODF file with path.
+    updateTextInput(session, "filepath", value = input$file1)
 
-  # Initialize the flag scheme.
-  n <- length(ctds)
-  for (i in 1:n)
-  {
-    print(paste("Initializing flag scheme for file: ", files[i]))
+    # Update the parameter list based on the current ODF file.
+    updateSelectInput(session, "parameter", choices = vars)
+  })
+  
+  output$plot <- renderUI({
+    plotOutput("p")
+  })
+  
+  # Get the data object
+  get_data <- reactive({
+    
+    # if(!exists(input$dataset)) return() # if no upload
+    
+    # if(check(input$dataset)) return()
+    
     # Initialize the flag scheme.
-    ctds[[i]] <- initializeFlagScheme(ctds[[i]], "DFO")
-  }
-  
-  # Use just the first file for now
-  ctd <- ctds[[1]]
-  
-  outVar <- reactive({
-    vars <- names(ctd[['data']])
-    return(vars)
+    # print(paste("Initializing flag scheme for file: ", input$file1))
+
+    ctd <- upload_data()
+    
+    # Initialize the flag scheme.
+    ctd <- initializeFlagScheme(ctd, "DFO")
+
+    df_data <- data.frame(ctd[['data']])
+    df_flags <- data.frame(ctd[['metadata']]$flags)
+    nms <- row.names(df_data)
+    
+    if(check(df_data)) return()
+    
+    df_data
+    
   })
 
-  output$parameters = renderUI({
-    # Select parameter to plot
-    selectInput(inputId = "type", label = strong("Parameter"), choices = outVar())
-  })
+  #plotting function using ggplot2
+  output$p <- renderPlot({
 
-  df_data <- data.frame(ctd[['data']])
-  df_flags <- data.frame(ctd[['metadata']]$flags)
-  nms <- row.names(df_data)
-  
-  output$plot <- renderPlotly({
-    p <- ggplot(data = df_data, aes(x = temperature, y = pressure, key = nms)) + geom_point()
-    p <- p + scale_y_reverse()
-    ggplotly(p) %>% layout(dragmode = "lasso")
+    plot.ctd <- get_data()
+
+    # Conditions for plotting
+    if(is.null(plot.ctd)) return()
+
+    # Make sure variable has been loaded
+    if(plot.ctd$variable == "") return()
+
+    output$plot <- renderPlotly({
+      p <- ggplot(data = plot.ctd$df_data, aes(x = plot.ctd$variable, y = pressure, key = nms)) + geom_point()
+      p <- p + scale_y_reverse()
+      ggplotly(p) %>% layout(dragmode = "lasso")
+    })
+
   })
   
-}
+  
+  # set uploaded file
+  upload_data <- reactive({
+    
+    # Load the CTD data
+    # path <- 'E:/Data/AZMP/2019/COR2019001/DATASHOP_PROCESSING/Step_3_Add_QF_Fields/'
+    # filesWithPath <- list.files(path = path, pattern = 'CTD_COR2019001_01\\w+_\\w+_DN\\.ODF', full.names = TRUE)
+    # files <- list.files(path = path, pattern = 'CTD_COR2019001_01\\w+_\\w+_DN\\.ODF', full.names = FALSE)
+    # ctds <- lapply(filesWithPath, read.ctd)
 
+    inFile <- input$file1
+    
+    if (is.null(inFile))
+      return(NULL)
+    
+    #could also store in a reactiveValues
+    read.ctd(inFile$datapath)
+  })
+  
+})
+
+# Create Shiny app ----
 shinyApp(ui = ui, server = server)
