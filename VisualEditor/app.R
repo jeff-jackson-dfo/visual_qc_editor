@@ -14,19 +14,15 @@ library(oce)
 library(plotly)
 
 # Define UI for application that draws a histogram
-ui <- fluidPage(
+ui <- fillPage(
+  
+    padding = 10,
     
     # Use a CSS theme. The file is in the "www" subfolder.
     theme = "bootstrap.pulse.css",
     
-    # Call to tell the UI that this app is using the shinyjs package.
-    useShinyjs(),
-    
-    # window_height <- shinyjs::js('window.innerHeight'),
-    # window_width <- shinyjs::js('window.innerWidth'),
-
     tags$head(tags$style(
-        HTML('* {font-family: BentonSans Book; font-size: 16px}')
+        HTML('* {font-family: BentonSans Book; font-size: 20px}')
     )),
     
     # Style horizontal rules (hr).
@@ -35,64 +31,53 @@ ui <- fluidPage(
     ))),
     
     # Create the title and style it.
-    h1(id = "big-heading", "Visual QC Editor"),
-    tags$head(tags$style(
-        HTML('#big-heading {
-      color: red;
-      font-size: 40px;
-      font-style: bold;
-    }')
+    tags$h1(id = "big-heading", "Visual QC Editor"),
+    tags$head(
+      tags$style(
+        HTML('
+              #big-heading{color: red; font-size: 40px; font-style: bold; }
+              #filepath{color: blue; font-size: 16px; font-style: bold; height = "60%"}
+             ')
     )),
     
     # Sidebar with a slider input for number of bins
-    sidebarLayout(
-        sidebarPanel(
-            br(),
-            
-            # Press button to load an ODF file.
-            p(style = "text-align: center; border-color: #f00",
+    fluidRow(
+      column(3,
+            # Insert a break above the button.
+            tags$br(),
+            # Create the button that when pressed will load the selected ODF file.
+            tags$p(style = "text-align: center; border-color: #f00; vertical-align: bottom",
               actionButton("loadButton", tags$b("Load ODF File"))),
             tags$style(
-                "#loadButton{color: blue; font-size: 20px; background-color: yellow; border-color: black; border-width: 5px}"
-            ),
-            
-            br(),
-            
-            # Text box containing file path and name.
-            div
-            (style = "font-size:20px;",
-                textInput(
-                    inputId = "filepath",
-                    label = div(style = "font-size:20px", "Selected ODF File:"),
-                    value = ""
-                )),
-            
-            # Insert Horizontal Rule (line) ----
-            # hr(),
-            
-            selectInput(
-                inputId = "parameter",
-                label = strong("Select X Parameter:"),
-                choices = NULL
-            )
-            
-        ),
-        
-        # Show a plot of the generated distribution
-        mainPanel(# textOutput("filep"),
-            # textOutput("params"),
-            # textOutput("cn"),
-            # textOutput("param"),
-            
-            plotlyOutput(
-                "profilePlot", width = "100%", height = "100%"
-            )
+              "#loadButton{color: #A52A2A; font-size: 20px; background-color: #FFDEAD; border-color: #A9A9A9; border-width: 2px}"
         )
+      ),
+      column(9,
+          # Text box containing file path and name.
+          tags$div(
+            style = "font-size:25px;",
+              textInput(
+                  inputId = "filepath",
+                  label = div(style = "font-size:20px", "Selected ODF File:"),
+                  value = ""
+              )
+          ),
+        selectInput(
+            inputId = "parameter",
+            label = strong("Select X Parameter:"),
+            choices = NULL
+        )
+      )
+    ),
+    plotlyOutput(
+      "profilePlot", width = "100%", height = "80%"
     )
 )
 
+
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
+    
     re1 <- eventReactive(input$loadButton,
                          {
                              fileWithPath <- file.choose()
@@ -177,9 +162,8 @@ server <- function(input, output, session) {
         p <- p + theme_bw()
         p <- p + scale_y_reverse()
         ggplotly(p) %>% layout(dragmode = "lasso")
-        
-    })
-    
+      }
+    )
 }
 
 # Run the application
