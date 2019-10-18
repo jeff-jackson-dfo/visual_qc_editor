@@ -8,8 +8,8 @@
 #
 
 library(shiny)
-library(shinyjs)
-library(shinyWidgets)
+# library(shinyjs)
+# library(shinyWidgets)
 library(oce)
 library(plotly)
 
@@ -26,9 +26,13 @@ ui <- fillPage(
     )),
     
     # Style horizontal rules (hr).
-    tags$head(tags$style(HTML(
-        'hr {border-top: 1px solid #000000}'
-    ))),
+    tags$head(
+      tags$style(
+        HTML('
+          hr {border-top: 1px solid #000000}
+        ')
+      )
+    ),
     
     # Create the title and style it.
     tags$h1(id = "big-heading", "Visual QC Editor"),
@@ -36,13 +40,14 @@ ui <- fillPage(
       tags$style(
         HTML('
               #big-heading{color: red; font-size: 40px; font-style: bold; }
-              #filepath{color: blue; font-size: 16px; font-style: bold; height = "60%"}
+              #filepath{color: black; font-size: 16px; font-style: bold; height = "60%"}
+              #qflag {color: green; font-size: 12px}
              ')
     )),
     
     # Sidebar with a slider input for number of bins
     fluidRow(
-      column(3,
+      column(2,
             # Insert a break above the button.
             tags$br(),
             # Create the button that when pressed will load the selected ODF file.
@@ -52,7 +57,7 @@ ui <- fillPage(
               "#loadButton{color: #A52A2A; font-size: 20px; background-color: #FFDEAD; border-color: #A9A9A9; border-width: 2px}"
         )
       ),
-      column(9,
+      column(2,
           # Text box containing file path and name.
           tags$div(
             style = "font-size:25px;",
@@ -67,8 +72,44 @@ ui <- fillPage(
             label = strong("Select X Parameter:"),
             choices = NULL
         )
-      )
+      ),
+      column(8,
+             # HTML("<div class='container'><br>
+             #        <h1>Quality Flag</h1>
+             #        <div>
+             #          <label id='no-quality-control'> 
+             #            <input type='radio' value='0' role='button'> 0
+             #          </label>
+             #          &nbsp;
+             #          <label id='appears-correct'>
+             #            <input type='radio' value='1' role='button'> 1
+             #          </label>
+             #          &nbsp;
+             #          <label id='appears-inconsistent'>
+             #            <input type='radio' value='2' role='button'> 2
+             #          </label>
+             #        </div>
+             #      </div>")), 
+
+             radioButtons(inputId = "radio-flags",
+                          label = "Quality Flag:",
+                          choices =
+                            c(
+                              "0" = "No-Quality-Control",
+                              "1" = "Appears-Correct",
+                              "2" = "Appears-Inconsistent",
+                              "3" = "Doubtful",
+                              "4" = "Erroneous",
+                              "5" = "Changed",
+                              "8" = "QC-By-Originator",
+                              "9" = "Missing"
+                              ),
+                            selected = "No-Quality-Control",
+                            inline = TRUE
+                          )
+      ),
     ),
+    
     plotlyOutput(
       "profilePlot", width = "100%", height = "80%"
     )
@@ -164,6 +205,7 @@ server <- function(input, output, session) {
         ggplotly(p) %>% layout(dragmode = "lasso")
       }
     )
+    
 }
 
 # Run the application
