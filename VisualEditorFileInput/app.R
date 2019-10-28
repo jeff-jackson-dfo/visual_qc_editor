@@ -1,8 +1,7 @@
 library(shiny)
 library(plotly)
 library(oce)
-# library(ODF)
-
+library(pander)
 
 # Define UI for application that draws a histogram
 ui <- fillPage(
@@ -72,7 +71,7 @@ ui <- fillPage(
                     label = "Quality Flag:",
                     choices =
                       c(
-                        "0" = "No-Quality-Control",
+                        # "0" = "No-Quality-Control",
                         "1" = "Appears-Correct",
                         # "2" = "Appears-Inconsistent",
                         "3" = "Doubtful",
@@ -81,7 +80,7 @@ ui <- fillPage(
                         # "8" = "QC-By-Originator",
                         # "9" = "Missing"
                         ),
-                      selected = "No-Quality-Control",
+                      selected = "Appears-Correct",
                       inline = TRUE
                     )
     )
@@ -90,7 +89,7 @@ ui <- fillPage(
   plotlyOutput("plot", width = "100%", height = "60%"),
   
   fluidRow(
-    verbatimTextOutput("brush")
+    verbatimTextOutput("brush"),
     # textOutput("odfFile"),
     # textOutput("filePath")
   )
@@ -145,8 +144,6 @@ server <- function(input, output, session) {
 
       # Coerce the CTD object's metadata list into an external list.
       odfData$lMeta <- as.list(ctd[['metadata']])
-
-      # nms <- as.numeric(row.names(odfData$dfCTD))
     })
 
     output$cn <- renderText({
@@ -157,15 +154,27 @@ server <- function(input, output, session) {
       vars <- names(odfData$dfCTD)
     })
 
-    output$nms <- reactive({
-      print(odfData$nms)
-    })
-
     observe({
       updateSelectInput(session,
                         "parameter",
                         choices = vars(),
                         selected = "temperature")
+    })
+    
+    observeEvent(input$parameter, {
+
+      flags <- c(
+        "1" = "Appears-Correct",
+        "3" = "Doubtful",
+        "4" = "Erroneous"
+      )
+
+      updateRadioButtons(session,
+                         "qflag",
+                         choices = flags,
+                         selected = "Appears-Correct",
+                         inline = TRUE)
+
     })
 
     var <- reactive({
@@ -210,19 +219,16 @@ server <- function(input, output, session) {
         
         # Get the metadata as a list.
         mdata <- meta()
-        cat(str(mdata$flags))
+        # cat(str(mdata$flags))
         
         # Get the indices for the selected point(s).
         idx <- select_data$pointNumber
-        cat(idx, "\n")
-        cat(as.character(input$parameter), "\n")
-        cat(as.character(input$qflag), "\n")
+        # cat(idx, "\n")
+        # cat(as.character(input$parameter), "\n")
+        # cat(as.character(input$qflag), "\n")
         
         if (!is.null(idx)) {
-          if (input$qflag == "No-Quality-Control") {
-            qc = setFlags(qf(), as.character(input$parameter), idx, value = 0)
-          }
-          else if (input$qflag == "Appears-Correct") {
+          if (input$qflag == "Appears-Correct") {
             qc = setFlags(qf(), as.character(input$parameter), idx, value = 1)
           }
           else if (input$qflag == "Doubtful") {
@@ -231,7 +237,11 @@ server <- function(input, output, session) {
           else if (input$qflag == "Erroneous") {
             qc = setFlags(qf(), as.character(input$parameter), idx, value = 4)
           }
-          cat(str(qc[['metadata']]$flags))
+          
+          save(qc, file = 'oceCTD.RData')
+          
+          # ps <- paste("qc[['metadata']]$flags$", as.character(input$parameter), "[idx]", sep = "")
+          # pander::evals("ps")
         }
 
         # cdata$qf <- as.factor(mdata$flags[var()])
