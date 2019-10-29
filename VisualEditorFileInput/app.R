@@ -1,7 +1,7 @@
 library(shiny)
 library(plotly)
 library(oce)
-library(pander)
+# library(pander)
 
 # Define UI for application that draws a histogram
 ui <- fillPage(
@@ -223,9 +223,9 @@ server <- function(input, output, session) {
         
         # Get the indices for the selected point(s).
         idx <- select_data$pointNumber
-        # cat(idx, "\n")
-        # cat(as.character(input$parameter), "\n")
-        # cat(as.character(input$qflag), "\n")
+        cat(idx, "\n")
+        cat(as.character(input$parameter), "\n")
+        cat(as.character(input$qflag), "\n")
         
         if (!is.null(idx)) {
           if (input$qflag == "Appears-Correct") {
@@ -238,7 +238,8 @@ server <- function(input, output, session) {
             qc = setFlags(qf(), as.character(input$parameter), idx, value = 4)
           }
           
-          save(qc, file = 'oceCTD.RData')
+          saveRDS(qc, file = "oceCTD.RData")
+          cat("qc oce object saved to file oceCTD.RData")
           
           # ps <- paste("qc[['metadata']]$flags$", as.character(input$parameter), "[idx]", sep = "")
           # pander::evals("ps")
