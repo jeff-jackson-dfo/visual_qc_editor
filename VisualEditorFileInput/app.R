@@ -7,7 +7,7 @@ library(shinyWidgets)
 # Define User Interface (UI) for the application.
 ui <- fillPage(
   
-  includeCSS("E:/R_HOME/Visual_QC_Editor/visual_qc_editor/VisualEditorFileInput/vqce.css"),
+  # includeCSS("E:/R_HOME/Visual_QC_Editor/visual_qc_editor/VisualEditorFileInput/vqce.css"),
   
   padding = 10,
   
@@ -35,9 +35,8 @@ ui <- fillPage(
   tags$head(
     tags$style(
       HTML('
-            #sidebarpanel {background-color: #CCFFFF; margin-left: 25px;}
-            #big-heading {color: red; font-size: 40px; font-style: bold; margin-left: 10px;}
-            #filepath {color: black; font-size: 16px; font-style: bold; height = "60%"}
+            #sidebarPanel {background-color: #CCFFFF; margin: 10px; width: 100%; text-align: center; vertical-align: center;}
+            #big-heading {color: red; font-size: 40px; font-style: bold; margin-left: 10px; text-align: center;}
             #qflag {color: green; font-size: 12px}
             #show {color: #000000; font-style: bold; font-size: 18px;}
            ')
@@ -46,72 +45,74 @@ ui <- fillPage(
   
   # Sidebar with a slider input for number of bins
   sidebarLayout(
-    sidebarPanel(id = "sidebarpanel",
-      # Insert a break above the button.
-      fileInput("file1", "Select ODF File",
-                multiple = TRUE,
-                accept = c("text/ODF",
-                           "text/Ocean Data Format",
-                           ".odf")
-      ),
-      # Text box containing file path and name.
-      tags$div(
-        style = "font-size:25px;",
-        textInput(
-          inputId = "filepath",
-          label = div(style = "font-size:20px", "Selected ODF File:"),
-          value = ""
+    sidebarPanel(
+      # id = "sidebarPanel",
+      div(
+        fileInput("file1", "Select ODF File",
+                  multiple = TRUE,
+                  accept = c("text/ODF",
+                             "text/Ocean Data Format",
+                             ".odf")
         )
       ),
-      selectInput(
-        inputId = "parameter",
-        label = strong("Select X Parameter:"),
-        choices = NULL
+      div(
+        selectInput(
+          inputId = "parameter",
+          label = strong("Select X Parameter:"),
+          choices = NULL
+        )
       ),
-      
       # Quality Flag choices.
       div(
-        radioButtons(inputId = "qflag",
-                      label = "Quality Flag:",
-                      choices =
-                        c(
-                          # "0" = "No-Quality-Control",
-                          "1" = "Appears-Correct",
-                          # "2" = "Appears-Inconsistent",
-                          "3" = "Doubtful",
-                          "4" = "Erroneous"
-                          # "5" = "Changed",
-                          # "8" = "QC-By-Originator",
-                          # "9" = "Missing"
-                          ),
-                        selected = "Appears-Correct",
-                        inline = TRUE
-                      ),
-        style = "text-align:center"
-      ),
-      
-      # Action Button when pressed opens a modal dialog with summary information for the current CTD file. 
-      div(actionButton("show", "Show CTD Summary"), style = "text-align:center;")
-      
+        radioButtons(
+          inputId = "qflag",
+          label = "Quality Flag:",
+          choices =
+            c(
+              # "0" = "No-Quality-Control",
+              "1" = "Appears-Correct",
+              # "2" = "Appears-Inconsistent",
+              "3" = "Doubtful",
+              "4" = "Erroneous"
+              # "5" = "Changed",
+              # "8" = "QC-By-Originator",
+              # "9" = "Missing"
+            ),
+          selected = "Appears-Correct",
+          inline = TRUE
+        )
+      )
+      # div(
+      #   # Action Button when pressed opens a modal dialog with summary information for the current CTD file.
+      #   actionButton("show1", "Show CTD Summary")
+      # ),
+      # div(  
+      #   # Action Button when pressed opens a modal dialog with summary information for the current CTD file.
+      #   actionButton("show2", "Show OCE CTD Plot")
+      # )   
     ),
-    # Show the profile plot for the user selected parameter vs pressure.
     mainPanel(
-      
-      plotOutput("oceplot"),
-      
-      # textOutput("cn")
-      # textOutput("odfFile")
-      
-      # fluidRow(
-      # verbatimTextOutput("brush"),
-      # textOutput("odfFile"),
-      # textOutput("filePath")
-      # )
-      
+      tabsetPanel(
+        tabPanel("CTD Summary",
+          # Output the CTD file summary information.
+          textOutput("summary")
+        ),
+        tabPanel("Standard OCE CTD Plot",
+          # Show the standard OCE plot for the current CTD file.
+          plotOutput("oceplot")
+        ),
+        tabPanel("Profile Plot",
+          # Show the profile plot for the user selected parameter vs pressure.
+          plotlyOutput("plot")
+        )
+      )
     )
-  ),
-  fillPage(
-    plotlyOutput("plot", width = "100%", height = "50%")
+    # textOutput("cn")
+    # textOutput("odfFile")
+    # fluidRow(
+    # verbatimTextOutput("brush"),
+    # textOutput("odfFile"),
+    # textOutput("filePath")
   )
 )
 
@@ -125,15 +126,15 @@ server <- function(input, output, session) {
       input$file1$name
     })
 
-    inFilePath <- reactive({
-      req(input$file1)
-      cat(str(input$file1))
-      input$file1$datapath
-    })
+    # inFilePath <- reactive({
+    #   req(input$file1)
+    #   cat(str(input$file1))
+    #   input$file1$datapath
+    # })
     
-    output$filePath <- renderText({
-      as.character(inFilePath())
-    })
+    # output$filePath <- renderText({
+    #   as.character(inFilePath())
+    # })
     
     # Observer (reactive endpoint).
     observe({
@@ -221,8 +222,16 @@ server <- function(input, output, session) {
 
     # output$table <- renderDataTable(dt)
 
+    output$summary <- renderText({
+      req(input$parameter)
+      capture.output(summary(odfData$ctd))
+    })
+    
     # When the "show" action button is pressed; a modal dialog displays with a summary of the current CTD object.
-    observeEvent(input$show, {
+    observeEvent(input$show1, {
+      # Make sure a file was successfully loaded before proceeding further.
+      req(input$parameter)
+      # Display a modal dialog.
       sendSweetAlert(
         session = session,
         title = "",
@@ -232,7 +241,7 @@ server <- function(input, output, session) {
         html = TRUE
       )
     })
-    
+
     output$oceplot <- renderPlot(
       {
         # Make sure that the selectInput drop down list box contains something before continuing.
@@ -242,6 +251,15 @@ server <- function(input, output, session) {
         oce::plot(odfData$ctd)
       }
     )
+    
+    observeEvent(input$show2, {
+      req(input$parameter)
+      showModal(
+        modalDialog(size = "l",
+          plotOutput("oceplot")
+        )
+      )
+    })
 
     output$plot <- renderPlotly(
       {
