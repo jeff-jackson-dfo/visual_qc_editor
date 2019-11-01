@@ -14,6 +14,7 @@ ui <- fillPage(title = "Visual Quality Flag Editor", bootstrap = TRUE, padding =
             #big-heading {color: red; font-size: 40px; font-style: bold; margin-left: 10px; text-align: center;}
             #qflag {color: green; font-size: 12px}
             #show {color: #000000; font-style: bold; font-size: 18px;}
+            #tabsetpanel {margin-left: 10px}
            ')
         )
     ),
@@ -66,16 +67,163 @@ ui <- fillPage(title = "Visual Quality Flag Editor", bootstrap = TRUE, padding =
                 )
             )
         ),
-
         # Show a plot of the generated distribution
-        mainPanel(
+        tabsetPanel(id = "tabsetpanel",
+                    tabPanel("CTD Summary",
+                             style="overflow-y:scroll; max-height: 70vh;",
+                             # Output the CTD file summary information.
+                             htmlOutput("summary")
+                    ),
+                    tabPanel("Standard OCE CTD Plot",
+                             style="overflow-y:scroll; max-height: 70vh",
+                             # Show the standard OCE plot for the current CTD file.
+                             plotOutput("oceplot", width = "100%", height = "100%"),
+                             style="width: 1000px; height: 1000px"
+                    ),
+                    tabPanel("Profile Plot",
+                             # Show the profile plot for the user selected parameter vs pressure.
+                             plotlyOutput("plot", width = "100%", height = "100%"),
+                             style="width: 1000px; height: 1000px"
+                    )
         )
     )
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
+    
+    odfData <- reactiveValues()
+    
+    observe({
+        
+        req(input$file1)
+        
+        # Read in the CTD data.
+        ctd <- read.ctd(as.character(input$file1$datapath))
+        
+        # Initialize the flag scheme.
+        ctd <- oce::initializeFlagScheme(ctd, "DFO")
+        
+        odfData$ctd <- ctd
+        
+        # Coerce the CTD object's data list into an external data frame.
+        odfData$dfCTD <- as.data.frame(ctd[['data']])
+        
+        # Coerce the CTD object's metadata list into an external list.
+        odfData$lMeta <- as.list(ctd[['metadata']])
+        
+    })
 
+    vars <- reactive({
+        vars <- names(odfData$dfCTD)
+    })
+    
+    observe({
+        updateSelectInput(session,
+                          "parameter",
+                          choices = vars(),
+                          selected = "temperature")
+    })
+    
+    observeEvent(input$parameter, {
+        
+        flags <- c(
+            "1" = "Appears-Correct",
+            "3" = "Doubtful",
+            "4" = "Erroneous"
+        )
+        
+        updateRadioButtons(session,
+                           "qflag",
+                           choices = flags,
+                           selected = "Appears-Correct",
+                           inline = TRUE)
+        
+    })
+    
+    output$summary <- renderText({
+        req(input$parameter)
+        HTML(paste(capture.output(summary(odfData$ctd)), collapse = "<br>"))
+    })
+    
+    output$oceplot <- renderPlot({
+        # Make sure that the selectInput drop down list box contains something before continuing.
+        req(input$parameter)
+        
+        # Output the standard OCE profile plot.
+        oce::plot(odfData$ctd)
+    })
+    
+    output$plot <- renderPlotly(
+        {
+            # Make sure that the selectInput drop down list box contains something before continuing.
+            req(input$parameter)
+            
+            select_data <- event_data("plotly_selected")
+            
+            # If there is no CTD loaded yet then do nothing.
+            if (is.null(df())) {
+                return()
+            }
+            
+            # Get data as a data frame.
+            cdata <- df()
+            # cat(str(cdata))
+            
+            # Get the metadata as a list.
+            mdata <- meta()
+            # cat(str(mdata$flags))
+            
+            # Get the indices for the selected point(s).
+            idx <- select_data$pointNumber
+            cat(idx, "\n")
+            cat(as.character(input$parameter), "\n")
+            cat(as.character(input$qflag), "\n")
+            
+            if (!is.null(idx)) {
+                if (input$qflag == "Appears-Correct") {
+                    qc = setFlags(qf(), as.character(input$parameter), idx, value = 1)
+                }
+                else if (input$qflag == "Doubtful") {
+                    qc = setFlags(qf(), as.character(input$parameter), idx, value = 3)
+                }
+                else if (input$qflag == "Erroneous") {
+                    qc = setFlags(qf(), as.character(input$parameter), idx, value = 4)
+                }
+                
+                saveRDS(qc, file = "oceCTD.RData")
+                cat("qc oce object saved to file oceCTD.RData")
+                
+                # ps <- paste("qc[['metadata']]$flags$", as.character(input$parameter), "[idx]", sep = "")
+                # pander::evals("ps")
+            }
+            
+            # cdata$qf <- as.factor(mdata$flags[var()])
+            
+            # Output the QFs for the current X parameter.
+            # cat(str(mdata$flags[var()]))
+            
+            # Produce the profile plot.
+            p <- ggplot(cdata)
+            p <- p + geom_point(aes_string(x = input$parameter, y = "pressure"), color = "lightgreen")
+            
+            if (!is.null(select_data)) {
+                # Debug information for selected point(s).
+                # cat(str(select_data))
+                # cat(paste("(", sprintf("%.04f", select_data$x), ",", sprintf("%.04f", select_data$y), ")\n",  sep = ""))
+                # p <- p + geom_point(aes_string(x = input$parameter[idx], y = "pressure"[idx]), color = "red")
+                # p <- p + scale_color_manual(breaks = cdata$qf, values = )
+                #   idx <- which(cdata$pressure %in% c(select_data[3]$x) & paste("cdata$", input$parameter, sep = ""))
+                # cdata[idx, "col"] <- "red"
+            }
+            
+            p <- p + theme_bw()
+            p <- p + scale_y_reverse()
+            # dragmode can be "lasso" for lasso select or "select" for box select.
+            ggplotly(p) %>% layout(dragmode = "select")
+        }
+    )
+    
 }
 
 # Run the application 

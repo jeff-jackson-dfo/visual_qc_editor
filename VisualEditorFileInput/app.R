@@ -95,7 +95,7 @@ ui <- fillPage(
       tabsetPanel(
         tabPanel("CTD Summary",
           # Output the CTD file summary information.
-          textOutput("summary")
+          htmlOutput("summary")
         ),
         tabPanel("Standard OCE CTD Plot",
           # Show the standard OCE plot for the current CTD file.
@@ -121,10 +121,10 @@ ui <- fillPage(
 server <- function(input, output, session) {
     
     # Observer (reactive endpoint).
-    output$odfFile <- renderText({
-      req(input$file1)
-      input$file1$name
-    })
+    # output$odfFile <- renderText({
+    #   req(input$file1)
+    #   input$file1$name
+    # })
 
     # inFilePath <- reactive({
     #   req(input$file1)
@@ -136,16 +136,16 @@ server <- function(input, output, session) {
     #   as.character(inFilePath())
     # })
     
-    # Observer (reactive endpoint).
-    observe({
-      req(input$file1)
-
-      # Display the current ODF file with path.
-      odfFile <- input$file1$name
-
-      # Display the current ODF file without path in the textInput box.
-      updateTextInput(session, "filepath", value = as.character(odfFile))
-    })
+    # # Observer (reactive endpoint).
+    # observe({
+    #   req(input$file1)
+    # 
+    #   # Display the current ODF file with path.
+    #   odfFile <- input$file1$name
+    # 
+    #   # Display the current ODF file without path in the textInput box.
+    #   updateTextInput(session, "filepath", value = as.character(odfFile))
+    # })
 
     odfData <- reactiveValues()
 
@@ -198,13 +198,13 @@ server <- function(input, output, session) {
 
     })
 
-    var <- reactive({
-      input$parameter
-    })
+    # var <- reactive({
+    #   input$parameter
+    # })
 
-    output$param <- renderText({
-      var()
-    })
+    # output$param <- renderText({
+    #   var()
+    # })
 
     qf <- reactive({
       odfData$ctd
@@ -224,23 +224,23 @@ server <- function(input, output, session) {
 
     output$summary <- renderText({
       req(input$parameter)
-      capture.output(summary(odfData$ctd))
+      HTML(paste(capture.output(summary(odfData$ctd)), collapse = "<br>"))
     })
     
     # When the "show" action button is pressed; a modal dialog displays with a summary of the current CTD object.
-    observeEvent(input$show1, {
-      # Make sure a file was successfully loaded before proceeding further.
-      req(input$parameter)
-      # Display a modal dialog.
-      sendSweetAlert(
-        session = session,
-        title = "",
-        text = p(HTML(paste(capture.output(summary(odfData$ctd)), collapse = "<br>")), style = "font-size:16px; text-align:left;"),
-        type = "",
-        width = "1000px",
-        html = TRUE
-      )
-    })
+    # observeEvent(input$show1, {
+    #   # Make sure a file was successfully loaded before proceeding further.
+    #   req(input$parameter)
+    #   # Display a modal dialog.
+    #   sendSweetAlert(
+    #     session = session,
+    #     title = "",
+    #     text = p(HTML(paste(capture.output(summary(odfData$ctd)), collapse = "<br>")), style = "font-size:16px; text-align:left;"),
+    #     type = "",
+    #     width = "1000px",
+    #     html = TRUE
+    #   )
+    # })
 
     output$oceplot <- renderPlot(
       {
@@ -252,14 +252,14 @@ server <- function(input, output, session) {
       }
     )
     
-    observeEvent(input$show2, {
-      req(input$parameter)
-      showModal(
-        modalDialog(size = "l",
-          plotOutput("oceplot")
-        )
-      )
-    })
+    # observeEvent(input$show2, {
+    #   req(input$parameter)
+    #   showModal(
+    #     modalDialog(size = "l",
+    #       plotOutput("oceplot")
+    #     )
+    #   )
+    # })
 
     output$plot <- renderPlotly(
       {
