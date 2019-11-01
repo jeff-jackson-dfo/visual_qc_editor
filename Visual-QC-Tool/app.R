@@ -14,7 +14,6 @@ ui <- fillPage(title = "Visual Quality Flag Editor", bootstrap = TRUE, padding =
             #big-heading {color: red; font-size: 40px; font-style: bold; margin-left: 10px; text-align: center;}
             #qflag {color: green; font-size: 12px}
             #show {color: #000000; font-style: bold; font-size: 18px;}
-            #tabsetpanel {margin-left: 10px}
            ')
         )
     ),
@@ -50,7 +49,7 @@ ui <- fillPage(title = "Visual Quality Flag Editor", bootstrap = TRUE, padding =
             div(
                 radioButtons(
                     inputId = "qflag",
-                    label = "Quality Flag:",
+                    label = "Change Quality Flag of Selected Point(s):",
                     choices =
                         c(
                             # "0" = "No-Quality-Control",
@@ -75,10 +74,9 @@ ui <- fillPage(title = "Visual Quality Flag Editor", bootstrap = TRUE, padding =
                              htmlOutput("summary")
                     ),
                     tabPanel("Standard OCE CTD Plot",
-                             style="overflow-y:scroll; max-height: 70vh",
                              # Show the standard OCE plot for the current CTD file.
                              plotOutput("oceplot", width = "100%", height = "100%"),
-                             style="width: 1000px; height: 1000px"
+                             style="width: 1000px; height: 1000px;"
                     ),
                     tabPanel("Profile Plot",
                              # Show the profile plot for the user selected parameter vs pressure.
@@ -154,6 +152,18 @@ server <- function(input, output, session) {
         oce::plot(odfData$ctd)
     })
     
+    qf <- reactive({
+        odfData$ctd
+    })
+    
+    df <- reactive({
+        odfData$dfCTD
+    })
+    
+    meta <- reactive({
+        odfData$lMeta
+    })
+    
     output$plot <- renderPlotly(
         {
             # Make sure that the selectInput drop down list box contains something before continuing.
@@ -206,6 +216,7 @@ server <- function(input, output, session) {
             # Produce the profile plot.
             p <- ggplot(cdata)
             p <- p + geom_point(aes_string(x = input$parameter, y = "pressure"), color = "lightgreen")
+            p <- p + geom_line(aes_string(x = input$parameter, y = "pressure"), color = "red")
             
             if (!is.null(select_data)) {
                 # Debug information for selected point(s).
