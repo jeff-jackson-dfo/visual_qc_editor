@@ -215,7 +215,7 @@ server <- function(input, output, session) {
             
             # Produce the profile plot.
             p <- ggplot(cdata)
-            p <- p + geom_point(aes_string(x = input$parameter, y = "pressure"), color = "lightgreen")
+            p <- p + geom_point(aes_string(x = input$parameter, y = "pressure"), color = "black")
             p <- p + geom_line(aes_string(x = input$parameter, y = "pressure"), color = "red")
             
             if (!is.null(select_data)) {
