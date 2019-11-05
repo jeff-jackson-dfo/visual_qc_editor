@@ -10,3 +10,5 @@ Imports:
   shiny,
   plotly,
   oce
+Remotes:
+  dankelley/oce
