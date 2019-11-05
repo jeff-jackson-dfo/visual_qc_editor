@@ -17,6 +17,15 @@ ui <- fillPage(title = "Visual Quality Flag Editor", bootstrap = TRUE, padding =
         )
     ),
 
+    # CSS code to add scrollbars to plots if desired.
+    # tags$head(
+    #     tags$style(
+    #         HTML('
+    #                 # plot {height: 1000px; overflow-y: scroll;}
+    #        ')
+    #     )
+    # ),
+    
     # Create the title and style it.
     titlePanel(tags$h1(id = "big-heading", "Visual Quality Flag Editor")),
     
@@ -73,13 +82,11 @@ ui <- fillPage(title = "Visual Quality Flag Editor", bootstrap = TRUE, padding =
             ),
             tabPanel("Standard OCE CTD Plot",
                 # Show the standard OCE plot for the current CTD file.
-                plotOutput("oceplot", width = "100%", height = "100%"),
-                style="width: 1000px; height: 1000px;"
+                div(style = "height:1000px;", plotOutput("oceplot", height = "80%", width = "80%")),
             ),
             tabPanel("Profile Plot",
                 # Show the profile plot for the user selected parameter vs pressure.
-                plotlyOutput("plot", width = "100%", height = "100%"),
-                style="width: 1000px; height: 1000px"
+                div(style = "height:1000px;", plotlyOutput("plot", height = "80%", width = "80%"))
             )
         )
     )
