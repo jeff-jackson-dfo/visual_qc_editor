@@ -5,7 +5,7 @@ Authors@R: c(
   person("Jeff", "Jackson", , "jeffrey.jackson@dfo-mpo.gc.ca", c("aut", "cre"))
 )
 Depends: R (>= 3.6.1)
-URL: https://github.com/hadley/r4ds
+URL: https://github.com/Xandac/visual_qc_editor
 Imports:
   shiny,
   plotly,
