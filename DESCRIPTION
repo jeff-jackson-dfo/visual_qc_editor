@@ -11,4 +11,3 @@ Imports:
   plotly,
   oce
 Remotes:
-  dankelley/oce
