@@ -1,0 +1,61 @@
+---
+title: "Processing Gully Points"
+author: "Jeff Jackson"
+date: "11/6/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(biogeo)
+library(plyr)
+library(sp)
+library(leaflet)
+```
+
+## The Gully Marine Protected Area (MPA)
+
+The purpose of this document is to illustrate how to produce a R Markdown document using Gully data and R code so it can be reused and easily updated if required.
+
+```{r}
+
+# Read in the Gully bounding points for the total area and its three zones.
+dfGully <- read.delim("gully_points.txt", header = TRUE, sep = " ")
+
+# Convert the point locations from degrees, minutes, seconds to decimal degrees.
+dlat <- dms2dd(dfGully$latd, dfGully$latm, dfGully$lats, "N")
+dlon <- dms2dd(dfGully$lond, dfGully$lonm, dfGully$lons, "W")
+
+# Create a new data frame with the decimal degree locations.
+dfPoints <- data.frame(dfGully$point, dlat, dlon)
+
+# Rename the latitude and longitude columns in dfPoints so that the "sp" package can find 
+# the columns.
+dfPoints <- rename(dfPoints, c("dlat" = "lat"))
+dfPoints <- rename(dfPoints, c("dlon" = "long"))
+
+# Each polygon should start and end at the same point.
+z1 <- Polygon(cbind(c(dfPoints$long[7:31], dfPoints$long[7]), c(dfPoints$lat[7:31], dfPoints$lat[7])))
+z2 <- Polygon(cbind(c(dfPoints$long[1:6],dfPoints$long[1]), c(dfPoints$lat[1:6],dfPoints$lat[1])), hole = TRUE)
+z3 <- Polygon(cbind(c(dfPoints$long[32:50], dfPoints$long[32]), c(dfPoints$lat[32:50], dfPoints$lat[32])))
+z1s <- Polygons(list(z1), "Zone1")
+z2s <- Polygons(list(z2), "Zone2")
+z3s <- Polygons(list(z3), "Zone3")
+SpP = SpatialPolygons(list(z1s, z2s, z3s), 1:3)
+
+# Save the data to a RData file to be used later if desired.
+save(dfGully, dfPoints, z1, z2, z3, z1s, z2s, z3s, SpP, file = "gully_points.RData")
+
+```
+
+## Including Plots
+
+
+```{r pressure, echo=FALSE}
+
+leaflet() %>%
+  addProviderTiles(providers$Esri.OceanBasemap) %>%
+  setView(lng = -60.5, lat = 44.5, zoom = 8) %>%
+  addPolygons(data = SpP)
+
+```
