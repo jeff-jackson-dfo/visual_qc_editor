@@ -37,14 +37,16 @@ dfPoints <- rename(dfPoints, c("dlon" = "long"))
 # Each polygon should start and end at the same point.
 z1 <- Polygon(cbind(c(dfPoints$long[7:31], dfPoints$long[7]), c(dfPoints$lat[7:31], dfPoints$lat[7])))
 z2 <- Polygon(cbind(c(dfPoints$long[1:6],dfPoints$long[1]), c(dfPoints$lat[1:6],dfPoints$lat[1])), hole = TRUE)
-z3 <- Polygon(cbind(c(dfPoints$long[32:50], dfPoints$long[32]), c(dfPoints$lat[32:50], dfPoints$lat[32])))
+z3e <- Polygon(cbind(c(dfPoints$long[32:37], dfPoints$long[32]), c(dfPoints$lat[32:37], dfPoints$lat[32])))
+z3w <- Polygon(cbind(c(dfPoints$long[38:50], dfPoints$long[5], dfPoints$long[38]), c(dfPoints$lat[38:50], dfPoints$lat[5], dfPoints$lat[38])))
 z1s <- Polygons(list(z1), "Zone1")
 z2s <- Polygons(list(z2), "Zone2")
-z3s <- Polygons(list(z3), "Zone3")
-SpP = SpatialPolygons(list(z1s, z2s, z3s), 1:3)
+z3se <- Polygons(list(z3e), "Zone3east")
+z3sw <- Polygons(list(z3w), "Zone3west")
+SpP = SpatialPolygons(list(z1s, z2s, z3se, z3sw), 1:4)
 
 # Save the data to a RData file to be used later if desired.
-save(dfGully, dfPoints, z1, z2, z3, z1s, z2s, z3s, SpP, file = "gully_points.RData")
+save(dfGully, dfPoints, z1, z2, z3e, z3w, z1s, z2s, z3se, z3sw, SpP, file = "gully_points.RData")
 
 ```
 
